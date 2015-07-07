@@ -14,6 +14,47 @@ ASimpleCylinderActor::ASimpleCylinderActor()
 	mesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("ProceduralMesh"));
 	mesh = PCIP.CreateDefaultSubobject(this, TEXT("ProceduralMesh"));
 	RootComponent = mesh;
+}*/
+
+ASimpleCylinderActor::ASimpleCylinderActor()  // Orginal
+{
+	mesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("ProceduralMesh"));
+	RootComponent = mesh;
+	lSdkManager = 0;
+	ios = 0;
+	lImporter = 0;
+	lFilename = "";
+	lImportStatus = 0; 
+}
+
+void ASimpleCylinderActor::SetupImport()
+{
+	
+	// Create the FBX SDK manager
+	lSdkManager = FbxManager::Create();
+
+	// Create an IOSettings object.
+	ios = FbxIOSettings::Create(lSdkManager, IOSROOT);
+	lSdkManager->SetIOSettings(ios);
+
+	// ... Configure the FbxIOSettings object ...
+
+	// Create an importer.
+	lImporter = FbxImporter::Create(lSdkManager, "");
+
+	// Declare the path and filename of the file containing the scene.
+	// In this case, we are assuming the file is in the same directory as the executable.
+	lFilename = "file.fbx";
+
+	// Initialize the importer.
+	lImportStatus = lImporter->Initialize(lFilename, -1, lSdkManager->GetIOSettings());
+
+	if (!lImportStatus) {
+		printf("Call to FbxImporter::Initialize() failed.\n");
+		printf("Error returned: %s\n\n", lImporter->GetStatus().GetErrorString());
+		exit(-1);
+	}
+	
 }
 
 void ASimpleCylinderActor::OnConstruction(const FTransform& Transform)
@@ -37,10 +78,12 @@ void ASimpleCylinderActor::GenerateMesh()
 	TArray<FProcMeshTangent> Tangents;
 	TArray<FColor> VertexColors;
 
+	
 	GenerateCylinder(Vertices, Triangles, Normals, UVs, Tangents, Height, Radius, CrossSectionCount, bCapEnds, bDoubleSided, bSmoothNormals);
 
 	mesh->ClearAllMeshSections();
-	mesh->CreateMeshSection(0, Vertices, Triangles, Normals, UVs, VertexColors, Tangents, false);
+	mesh->CreateMeshSection(0, Vertices, Triangles, Normals, UVs, VertexColors, Tangents, true);
+	mesh->MarkRenderStateDirty();  // Needs to be here in order for collision to work on things we need collision on.
 }
 
 void ASimpleCylinderActor::GenerateCylinder(TArray<FVector>& Vertices, TArray<int32>& Triangles, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents, float InHeight, float InWidth, int32 InCrossSectionCount, bool bInCapEnds, bool bInDoubleSided, bool bInSmoothNormals)
@@ -240,4 +283,3 @@ void ASimpleCylinderActor::GenerateCylinder(TArray<FVector>& Vertices, TArray<in
 		}
 	}
 }
-*/

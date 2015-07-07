@@ -1,6 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "first.h"
+//#include "fbxsdk.h"
+//#include "fbxfilesdk/fbxio/fbxiosettings.h"
 #include "MyKismetProceduralMeshLibrary.h"
 /*
 UMyKismetProceduralMeshLibrary::UMyKismetProceduralMeshLibrary(const class FObjectInitializer& PCIP)
@@ -51,10 +53,10 @@ void UMyKismetProceduralMeshLibrary::GenerateBoxMesh(FVector BoxRadius, TArray<F
 	Normals[0] = Normals[1] = Normals[2] = Normals[3] = FVector(0, 0, 1);
 	Tangents[0] = Tangents[1] = Tangents[2] = Tangents[3] = FProcMeshTangent(0.f, -1.f, 0.f);
 
-	Vertices[4] = BoxVerts[7];  //4
-	Vertices[5] = BoxVerts[4];	//0
-	Vertices[6] = BoxVerts[0];	//3
-	Vertices[7] = BoxVerts[3];	//7
+	Vertices[4] = BoxVerts[4];  //4
+	Vertices[5] = BoxVerts[0];	//0
+	Vertices[6] = BoxVerts[3];	//3
+	Vertices[7] = BoxVerts[7];	//7
 	ConvertQuadToTriangles(Triangles, 4, 5, 6, 7);
 	Normals[4] = Normals[5] = Normals[6] = Normals[7] = FVector(-1, 0, 0);
 	Tangents[4] = Tangents[5] = Tangents[6] = Tangents[7] = FProcMeshTangent(0.f, -1.f, 0.f);
