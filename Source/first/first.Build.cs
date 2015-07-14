@@ -24,7 +24,9 @@ public class first : ModuleRules
            // FBxLibPath = "D:/Autodesk/FBX/FBXSDK/2016.0/lib/vs2013/x64/debug/";
             PublicLibraryPaths.Add(FBxLibPath);
 
-            PublicAdditionalLibraries.Add("D:/Autodesk/FBX/FBXSDK/2016.0/lib/vs2013/x64/debug/libfbxsdk.lib");  // DEBUG LIB right know !!
+            PublicAdditionalLibraries.Add("D:/Autodesk/FBX/FBXSDK/2016.0/lib/vs2013/x64/release/libfbxsdk.lib");  // Release LIB right know !!
+            // Checkout https://answers.unrealengine.com/questions/26463/loading-dlls-from-plugins-1.html
+            // And D:\unrealLee\UnrealEngine\Engine\Binaries\ThirdParty\AutodeskFBXsdk\release
 
             // We are using DLL versions of the FBX libraries
             Definitions.Add("FBXSDK_SHARED");

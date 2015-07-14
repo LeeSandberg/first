@@ -88,6 +88,7 @@
 
 #include "GameFramework/Actor.h"
 #include "ProceduralMeshComponent.h" 
+#include "SceneCache.h"
 #include "SimpleCylinderActor.generated.h"
 
 UCLASS()
@@ -130,13 +131,21 @@ public:
 	//virtual void Tick( float DeltaSeconds ) override;
 
 private:
-	void GenerateMesh();
+
+	TArray<FVector> Vertices;
+	TArray<int32> Triangles;
+	TArray<FVector> Normals;
+	TArray<FVector2D> UVs;
+	TArray<FProcMeshTangent> Tangents;
+	TArray<FColor> VertexColors;
 	
 	FbxManager* lSdkManager;
 
 	FbxIOSettings* ios;
 
 	FbxImporter* lImporter;
+
+	FbxScene* lScene;
 
 	const char* lFilename;
 
@@ -145,8 +154,24 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = Materials)
 	UProceduralMeshComponent* mesh;
 
+	void GenerateMesh();
+	void DrawMesh(FbxNode* pNode); // , FbxTime& pTime, FbxAnimLayer* pAnimLayer,
+	//	FbxAMatrix& pGlobalPosition, FbxPose* pPose); // , ShadingMode pShadingMode);
 	void GenerateCylinder(TArray<FVector>& Vertices, TArray<int32>& Triangles, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents, float Height, float InWidth, int32 InCrossSectionCount, bool bCapEnds = false, bool bDoubleSided = false, bool bInSmoothNormals = true);
-	};
+	void DrawMarker(FbxAMatrix& pGlobalPosition);
+	void DisplayHierarchy(FbxScene* pScene);
+	void DisplayHierarchy(FbxNode* pNode, int pDepth);
+	void DisplayMesh(FbxNode* pNode);
+	void DisplayControlsPoints(FbxMesh* pMesh);
+	void DisplayPolygons(FbxMesh* pMesh);
+	void DisplayMaterialMapping(FbxMesh* pMesh);
+	void DisplayTextureMapping(FbxMesh* pMesh);
+	void DisplayTextureNames(FbxProperty &pProperty, FbxString& pConnectionString);
+	void DisplayMaterialConnections(FbxMesh* pMesh);
+	void DisplayMaterialTextureConnections(FbxSurfaceMaterial* pMaterial,
+		char * header, int pMatId, int l);
+
+};
 
 
 // A simple procedural cylinder example
