@@ -1,34 +1,45 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "first.h"
-#include "FBX_Importer.h"
+#include "FBX_Importer_test.h"
 
-FBX_Importer::FBX_Importer()
+
+// Sets default values
+AFBX_Importer_test::AFBX_Importer_test()
 {
+ 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	PrimaryActorTick.bCanEverTick = true;
+
 }
 
-FBX_Importer::~FBX_Importer()
+// Called when the game starts or when spawned
+void AFBX_Importer_test::BeginPlay()
 {
-	if (m_pFbxManager != nullptr)
+	Super::BeginPlay();
+	
+}
+
+// Called every frame
+void AFBX_Importer_test::Tick( float DeltaTime )
+{
+	Super::Tick( DeltaTime );
+
+}
+
+void AFBX_Importer_test::LoadFBX(TArray<FVector>* pOutVertexArray)
+{
+	if (m_pFbxManager == nullptr)
 	{
-		m_pFbxManager->Destroy();
-	}
-}
-
-void FBX_Importer::LoadFBX(FString InFileName, TArray<FVector>* pOutVertexArray, TArray<int32>* pOutTriangleArray)
-{
-//	if (m_pFbxManager == nullptr)
-//	{
 		m_pFbxManager = FbxManager::Create();
 
 		FbxIOSettings* _pFbxIOSettings = FbxIOSettings::Create(m_pFbxManager, IOSROOT);
 		m_pFbxManager->SetIOSettings(_pFbxIOSettings);
-//	}
+	}
 
-	FbxImporter* _pFbxImporter = FbxImporter::Create(m_pFbxManager, "Imp");
-	FbxScene* _pFbxScene = FbxScene::Create(m_pFbxManager, "Scene");
+	FbxImporter* _pFbxImporter = FbxImporter::Create(m_pFbxManager, "");
+	FbxScene* _pFbxScene = FbxScene::Create(m_pFbxManager, "");
 
-	bool _bSuccess = _pFbxImporter->Initialize(TCHAR_TO_ANSI(*InFileName), -1, m_pFbxManager->GetIOSettings());
+	bool _bSuccess = _pFbxImporter->Initialize("D:/Joel/FBX/Test Objects/test_object_1.fbx", -1, m_pFbxManager->GetIOSettings());
 	if (!_bSuccess)	return;
 
 	_bSuccess = _pFbxImporter->Import(_pFbxScene);
@@ -54,9 +65,6 @@ void FBX_Importer::LoadFBX(FString InFileName, TArray<FVector>* pOutVertexArray,
 			FbxMesh* _pMesh = (FbxMesh*)_pChildNode->GetNodeAttribute();
 
 			FbxVector4* _pVertices = _pMesh->GetControlPoints();
-
-			for (int j = 0; j < _pMesh->GetPolygonCount() * 3; j++)
-				pOutTriangleArray->Push(j);
 
 			for (int j = 0; j < _pMesh->GetPolygonCount(); j++)
 			{

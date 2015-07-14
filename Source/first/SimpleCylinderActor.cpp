@@ -80,8 +80,9 @@ void ASimpleCylinderActor::GenerateMesh()
 
 	
 	//GenerateCylinder(Vertices, Triangles, Normals, UVs, Tangents, Height, Radius, CrossSectionCount, bCapEnds, bDoubleSided, bSmoothNormals);
+	FString _fileName = "D:\\Joel\\FBX\\Test Objects\\advanced_all_joined.fbx";
 	FBX_Importer* _importer = new FBX_Importer();
-	_importer->LoadFBX(&Vertices, &Triangles);
+	_importer->LoadFBX(_fileName, &Vertices, &Triangles);
 	mesh->ClearAllMeshSections();
 	mesh->CreateMeshSection(0, Vertices, Triangles, Normals, UVs, VertexColors, Tangents, true);
 	mesh->MarkRenderStateDirty();  // Needs to be here in order for collision to work on things we need collision on.

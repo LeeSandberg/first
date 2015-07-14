@@ -12,7 +12,7 @@ public:
 	FBX_Importer();
 	~FBX_Importer();
 
-	void LoadFBX(TArray<FVector>* pOutVertexArray, TArray<int32>* pOutTriangleArray);
+	void LoadFBX(FString InFileName, TArray<FVector>* pOutVertexArray, TArray<int32>* pOutTriangleArray);
 
 private:
 
