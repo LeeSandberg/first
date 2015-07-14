@@ -20,13 +20,13 @@ ASimpleCylinderActor::ASimpleCylinderActor()  // Orginal
 {
 	mesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("ProceduralMesh"));
 	RootComponent = mesh;
-	lSdkManager = 0;
+/*	lSdkManager = 0;
 	ios = 0;
 	lImporter = 0;
 	lFilename = "";
-	lImportStatus = 0; 
+	lImportStatus = 0; */
 }
-
+/*
 void ASimpleCylinderActor::SetupImport()
 {
 	
@@ -49,14 +49,14 @@ void ASimpleCylinderActor::SetupImport()
 	// Initialize the importer.
 	lImportStatus = lImporter->Initialize(lFilename, -1, lSdkManager->GetIOSettings());
 
-	if (!lImportStatus) {
+		if (!lImportStatus) {
 		printf("Call to FbxImporter::Initialize() failed.\n");
 		printf("Error returned: %s\n\n", lImporter->GetStatus().GetErrorString());
 		exit(-1);
 	}
 	
 }
-
+*/
 void ASimpleCylinderActor::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
@@ -79,8 +79,9 @@ void ASimpleCylinderActor::GenerateMesh()
 	TArray<FColor> VertexColors;
 
 	
-	GenerateCylinder(Vertices, Triangles, Normals, UVs, Tangents, Height, Radius, CrossSectionCount, bCapEnds, bDoubleSided, bSmoothNormals);
-
+	//GenerateCylinder(Vertices, Triangles, Normals, UVs, Tangents, Height, Radius, CrossSectionCount, bCapEnds, bDoubleSided, bSmoothNormals);
+	FBX_Importer* _importer = new FBX_Importer();
+	_importer->LoadFBX(&Vertices, &Triangles);
 	mesh->ClearAllMeshSections();
 	mesh->CreateMeshSection(0, Vertices, Triangles, Normals, UVs, VertexColors, Tangents, true);
 	mesh->MarkRenderStateDirty();  // Needs to be here in order for collision to work on things we need collision on.

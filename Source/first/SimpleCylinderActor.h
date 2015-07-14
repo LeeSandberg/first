@@ -67,9 +67,8 @@
 
 #endif // PLATFORM_WINDOWS
 
-#include "D:/Autodesk/FBX/FBXSDK/2016.0/include/fbxsdk.h"
-#include "D:/Autodesk/FBX/FBXSDK/2016.0/include/fbxsdk/fileio/fbxiosettings.h"
-
+//#include "D:/Autodesk/FBX/FBX SDK/2014.2.1/include/fbxsdk.h"
+#include "FBX_Importer.h"
 #include "TokenizedMessage.h"
 
 
@@ -132,7 +131,7 @@ public:
 private:
 	void GenerateMesh();
 	
-	FbxManager* lSdkManager;
+/*	FbxManager* lSdkManager;
 
 	FbxIOSettings* ios;
 
@@ -141,7 +140,7 @@ private:
 	const char* lFilename;
 
 	bool lImportStatus;
-	
+*/	
 	UPROPERTY(VisibleAnywhere, Category = Materials)
 	UProceduralMeshComponent* mesh;
 
