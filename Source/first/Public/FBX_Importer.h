@@ -12,9 +12,11 @@ public:
 	FBX_Importer();
 	~FBX_Importer();
 
-	void LoadFBX(FString InFileName, TArray<FVector>* pOutVertexArray, TArray<int32>* pOutTriangleArray);
+	void LoadFBX(FString InFileName, TArray<FVector>* pOutVertexArray, TArray<int32>* pOutTriangleArray, TArray<FVector>* pOutNormalArray);
 
 private:
 
 	FbxManager* m_pFbxManager;
+
+	void ReadNormal(FbxMesh* pInMesh, int iInControlPointIndex, int iInVertexCounter, FVector* vOutNormal);
 };
