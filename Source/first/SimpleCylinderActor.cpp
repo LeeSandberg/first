@@ -11,16 +11,16 @@
 /*
 ASimpleCylinderActor::ASimpleCylinderActor()
 {
-	mesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("ProceduralMesh"));
-	mesh = PCIP.CreateDefaultSubobject(this, TEXT("ProceduralMesh"));
-	RootComponent = mesh;
+mesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("ProceduralMesh"));
+mesh = PCIP.CreateDefaultSubobject(this, TEXT("ProceduralMesh"));
+RootComponent = mesh;
 }*/
 
 ASimpleCylinderActor::ASimpleCylinderActor()  // Orginal
 {
 	mesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("ProceduralMesh"));
 	RootComponent = mesh;
-/*	lSdkManager = 0;
+	/*	lSdkManager = 0;
 	ios = 0;
 	lImporter = 0;
 	lFilename = "";
@@ -29,32 +29,26 @@ ASimpleCylinderActor::ASimpleCylinderActor()  // Orginal
 /*
 void ASimpleCylinderActor::SetupImport()
 {
-	
-	// Create the FBX SDK manager
-	lSdkManager = FbxManager::Create();
 
-	// Create an IOSettings object.
-	ios = FbxIOSettings::Create(lSdkManager, IOSROOT);
-	lSdkManager->SetIOSettings(ios);
+// Create the FBX SDK manager
+lSdkManager = FbxManager::Create();
+// Create an IOSettings object.
+ios = FbxIOSettings::Create(lSdkManager, IOSROOT);
+lSdkManager->SetIOSettings(ios);
+// ... Configure the FbxIOSettings object ...
+// Create an importer.
+lImporter = FbxImporter::Create(lSdkManager, "");
+// Declare the path and filename of the file containing the scene.
+// In this case, we are assuming the file is in the same directory as the executable.
+lFilename = "file.fbx";
+// Initialize the importer.
+lImportStatus = lImporter->Initialize(lFilename, -1, lSdkManager->GetIOSettings());
+if (!lImportStatus) {
+printf("Call to FbxImporter::Initialize() failed.\n");
+printf("Error returned: %s\n\n", lImporter->GetStatus().GetErrorString());
+exit(-1);
+}
 
-	// ... Configure the FbxIOSettings object ...
-
-	// Create an importer.
-	lImporter = FbxImporter::Create(lSdkManager, "");
-
-	// Declare the path and filename of the file containing the scene.
-	// In this case, we are assuming the file is in the same directory as the executable.
-	lFilename = "file.fbx";
-
-	// Initialize the importer.
-	lImportStatus = lImporter->Initialize(lFilename, -1, lSdkManager->GetIOSettings());
-
-		if (!lImportStatus) {
-		printf("Call to FbxImporter::Initialize() failed.\n");
-		printf("Error returned: %s\n\n", lImporter->GetStatus().GetErrorString());
-		exit(-1);
-	}
-	
 }
 */
 void ASimpleCylinderActor::OnConstruction(const FTransform& Transform)
@@ -71,21 +65,23 @@ void ASimpleCylinderActor::BeginPlay()
 
 void ASimpleCylinderActor::GenerateMesh()
 {
-	TArray<FVector> Vertices;
-	TArray<int32> Triangles;
-	TArray<FVector> Normals;
+	TArray<TArray<FVector>> Vertices;
+	TArray<TArray<int32>> Triangles;
+	TArray<TArray<FVector>> Normals;
 	TArray<FVector2D> UVs;
 	TArray<FProcMeshTangent> Tangents;
 	TArray<FColor> VertexColors;
+	int NodeCount;
 
-	
 	//GenerateCylinder(Vertices, Triangles, Normals, UVs, Tangents, Height, Radius, CrossSectionCount, bCapEnds, bDoubleSided, bSmoothNormals);
-	FString _fileName = "D:\\Joel\\FBX\\Test Objects\\test_object_4.fbx";
+	FString _fileName = "D:\\Joel\\FBX\\Test Objects\\test_object_3.fbx";
 	FBX_Importer* _importer = new FBX_Importer();
-	_importer->LoadFBX(_fileName, &Vertices, &Triangles, &Normals);
+	_importer->LoadFBX(_fileName, &Vertices, &Triangles, &Normals, &NodeCount);
 	mesh->ClearAllMeshSections();
-	mesh->CreateMeshSection(0, Vertices, Triangles, Normals, UVs, VertexColors, Tangents, true);
+	for (int i = 0; i < NodeCount; i++)
+		mesh->CreateMeshSection(i, Vertices[i], Triangles[i], Normals[i], UVs, VertexColors, Tangents, true);
 	mesh->MarkRenderStateDirty();  // Needs to be here in order for collision to work on things we need collision on.
+
 }
 
 void ASimpleCylinderActor::GenerateCylinder(TArray<FVector>& Vertices, TArray<int32>& Triangles, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents, float InHeight, float InWidth, int32 InCrossSectionCount, bool bInCapEnds, bool bInDoubleSided, bool bInSmoothNormals)
