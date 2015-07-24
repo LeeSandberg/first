@@ -71,23 +71,21 @@ void ASimpleCylinderActor::BeginPlay()
 
 void ASimpleCylinderActor::GenerateMesh()
 {
-	TArray<TArray<FVector>> Vertices;
-	TArray<TArray<int32>> Triangles;
-	TArray<TArray<FVector>> Normals;
+	TArray<FVector> Vertices;
+	TArray<int32> Triangles;
+	TArray<FVector> Normals;
 	TArray<FVector2D> UVs;
 	TArray<FProcMeshTangent> Tangents;
 	TArray<FColor> VertexColors;
-	int NodeCount;
+
 	
 	//GenerateCylinder(Vertices, Triangles, Normals, UVs, Tangents, Height, Radius, CrossSectionCount, bCapEnds, bDoubleSided, bSmoothNormals);
-	FString _fileName = "D:\\Joel\\FBX\\Test Objects\\test_object_3.fbx";
+	FString _fileName = "D:\\Joel\\FBX\\Test Objects\\test_object_4.fbx";
 	FBX_Importer* _importer = new FBX_Importer();
-	_importer->LoadFBX(_fileName, &Vertices, &Triangles, &Normals, &NodeCount);
+	_importer->LoadFBX(_fileName, &Vertices, &Triangles, &Normals);
 	mesh->ClearAllMeshSections();
-	for (int i = 0; i < NodeCount; i++)
-		mesh->CreateMeshSection(i, Vertices[i], Triangles[i], Normals[i], UVs, VertexColors, Tangents, true);
+	mesh->CreateMeshSection(0, Vertices, Triangles, Normals, UVs, VertexColors, Tangents, true);
 	mesh->MarkRenderStateDirty();  // Needs to be here in order for collision to work on things we need collision on.
-	
 }
 
 void ASimpleCylinderActor::GenerateCylinder(TArray<FVector>& Vertices, TArray<int32>& Triangles, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents, float InHeight, float InWidth, int32 InCrossSectionCount, bool bInCapEnds, bool bInDoubleSided, bool bInSmoothNormals)
