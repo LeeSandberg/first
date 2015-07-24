@@ -16,7 +16,7 @@ FBX_Importer::~FBX_Importer()
 	}
 }
 
-void FBX_Importer::LoadFBX(FString InFileName, TArray<FVector>* pOutVertexArray, TArray<int32>* pOutTriangleArray, TArray<FVector>* pOutNormalArray)
+void FBX_Importer::LoadFBX(FString InFileName, TArray<TArray<FVector>>* pOutVertexArray, TArray<TArray<int32>>* pOutTriangleArray, TArray<TArray<FVector>>* pOutNormalArray, int* iOutNodeCount)
 {
 	if (m_pFbxManager == nullptr)
 	{
@@ -41,10 +41,9 @@ void FBX_Importer::LoadFBX(FString InFileName, TArray<FVector>* pOutVertexArray,
 
 	if (_pRootNode)
 	{
-		TArray<FVector> _tempNormals;
-		int _iVertexCounter = 0;
-
-		for (int i = 0; i < _pRootNode->GetChildCount(); i++)
+		//TArray<FVector> _tempNormals;
+		*iOutNodeCount = _pRootNode->GetChildCount();
+		for (int i = 0; i < *iOutNodeCount; i++)
 		{
 			FbxNode* _pChildNode = _pRootNode->GetChild(i);
 
@@ -61,9 +60,19 @@ void FBX_Importer::LoadFBX(FString InFileName, TArray<FVector>* pOutVertexArray,
 			FbxMesh* _pMesh = (FbxMesh*)_pChildNode->GetNodeAttribute();
 
 			FbxVector4* _pVertices = _pMesh->GetControlPoints();
+			//_pMesh->GetPolygonVertexCount();
+			//pOutTriangleArray->Push(_pMesh->GetPolygonVertices());
+			//for (int j = 0; j < _pMesh->GetPolygonVertexCount(); j++)
+			//	pOutTriangleArray->Push(_pMesh->GetPolygonVertex[j]);
 
-			for (int j = 0; j < _pMesh->GetPolygonCount() * 3; j++)
-				pOutTriangleArray->Push(j);
+			TArray<FVector> _tempVertexArray;
+			TArray<FVector> _tempNormalArray;
+			TArray<int> _tempIndexArray;
+			int _iVertexCounter = 0;
+			FbxMatrix _mTotalMatrix = ComputeTotalMatrix(_pChildNode);
+			//FbxVector _vNodeUp = _pChildNode->UpVectorProperty.Get();
+			//for (int j = 0; j < _pMesh->GetPolygonVertexCount(); j++)
+			//	_tempIndexArray.Push(j);
 
 			for (int j = 0; j < _pMesh->GetPolygonCount(); j++)
 			{
@@ -71,35 +80,46 @@ void FBX_Importer::LoadFBX(FString InFileName, TArray<FVector>* pOutVertexArray,
 				int _iNumVertices = _pMesh->GetPolygonSize(j);
 				check(_iNumVertices == 3);
 
+				int _iVertexIndex = _pMesh->GetPolygonVertexIndex(j);
+
+				int _pVertexIndexArray = _pMesh->GetPolygonVertices()[_iVertexIndex];
+
 				for (int k = 0; k < _iNumVertices; k++)
 				{
 					int _iControlPointIndex = _pMesh->GetPolygonVertex(j, k);
 
 					FVector _vNormal;
 					ReadNormal(_pMesh, _iControlPointIndex, _iVertexCounter, &_vNormal);
-					_vNormal = -_vNormal;
+					//_vNormal = -_vNormal;
+
 
 					FbxVector4 _controlPoint = _pVertices[_iControlPointIndex];
-					_controlPoint = (_controlPoint * _dNodeScale) +_vNodePosition;
+					//FbxVector4 _foo(10.0, 10.0, 10.0);
+					_controlPoint = _controlPoint  + (_vNodePosition*0.0001);
+					//_controlPoint = _mTotalMatrix.MultNormalize(_controlPoint);
 
 					FVector _vertex;
 					_vertex.X = (float)_controlPoint.mData[0];
 					_vertex.Y = (float)_controlPoint.mData[1];
 					_vertex.Z = (float)_controlPoint.mData[2];
 
-					pOutVertexArray->Push(_vertex);
-					_tempNormals.Push(_vNormal);
+					_tempVertexArray.Push(_vertex);
+					_tempNormalArray.Push(_vNormal);
+					_tempIndexArray.Push(_iVertexCounter);
 					_iVertexCounter++;
 
 				}
 
 			}
+			pOutVertexArray->Push(_tempVertexArray);
+			pOutNormalArray->Push(_tempNormalArray);
+			pOutTriangleArray->Push(_tempIndexArray);
 		}
 		//TArray<FVector>::TIterator _it = _tempNormals.CreateIterator();
-		for (int i = _tempNormals.Num() -1; i >= 0; i--)
-		{
-			pOutNormalArray->Push(_tempNormals[i]);
-		}
+		//for (int i = _tempNormals.Num() -1; i >= 0; i--)
+		//{
+		//	pOutNormalArray->Push(_tempNormals[i]);
+		//}
 	}
 }
 
@@ -163,4 +183,21 @@ void FBX_Importer::ReadNormal(FbxMesh* pInMesh, int iInControlPointIndex, int iI
 			}
 			break;
 	}
+}
+
+FbxMatrix FBX_Importer::ComputeTotalMatrix(FbxNode* pInNode)
+{
+	FbxMatrix _mGeometry;
+	FbxVector4 _vTranslation, _vRotation, _vScaling;
+	_vTranslation = pInNode->GetGeometricTranslation(FbxNode::eSourcePivot);
+	_vRotation = pInNode->GetGeometricRotation(FbxNode::eSourcePivot);
+	_vScaling = pInNode->GetGeometricScaling(FbxNode::eSourcePivot);
+	_mGeometry.SetTRS(_vTranslation, _vRotation, _vScaling);
+
+	FbxMatrix _mGlobalTransform = pInNode->EvaluateGlobalTransform();//FbxScene->GetEvaluator()->GetNodeGlobalTransform(Node);
+
+	FbxMatrix _mTotalMatrix;
+	_mTotalMatrix = _mGlobalTransform * _mGeometry;
+
+	return _mTotalMatrix;
 }
