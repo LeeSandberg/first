@@ -54,7 +54,7 @@ void FBX_Importer::LoadFBX(FString InFileName, TArray<TArray<FVector>>* pOutVert
 			if (_AttributeType != FbxNodeAttribute::eMesh)
 				continue;
 
-			FbxVector4 _vNodePosition = (FbxVector4)_pChildNode->LclTranslation.Get();
+			FbxDouble3 _vNodePosition = _pChildNode->LclTranslation.Get();
 			FbxDouble3 _dNodeScale = _pChildNode->LclScaling.Get();
 
 			FbxMesh* _pMesh = (FbxMesh*)_pChildNode->GetNodeAttribute();
@@ -69,7 +69,9 @@ void FBX_Importer::LoadFBX(FString InFileName, TArray<TArray<FVector>>* pOutVert
 			TArray<FVector> _tempNormalArray;
 			TArray<int> _tempIndexArray;
 			int _iVertexCounter = 0;
-			FbxMatrix _mTotalMatrix = ComputeTotalMatrix(_pChildNode);
+			//FbxMatrix _mTotalMatrix = ComputeTotalMatrix(_pChildNode);
+			FbxMatrix _mNodeTransform = _pChildNode->EvaluateLocalTransform();
+			//_mNodeTransform = _mNodeTransform * 10.0f;
 			//FbxVector _vNodeUp = _pChildNode->UpVectorProperty.Get();
 			//for (int j = 0; j < _pMesh->GetPolygonVertexCount(); j++)
 			//	_tempIndexArray.Push(j);
@@ -95,17 +97,19 @@ void FBX_Importer::LoadFBX(FString InFileName, TArray<TArray<FVector>>* pOutVert
 
 					FbxVector4 _controlPoint = _pVertices[_iControlPointIndex];
 					//FbxVector4 _foo(10.0, 10.0, 10.0);
-					_controlPoint = _controlPoint + (_vNodePosition*0.0001);
+					//_controlPoint = (_controlPoint /* _dNodeScale /** 0.0001f*/) + (_vNodePosition /* 0.0001f*/);
 					//_controlPoint = _mTotalMatrix.MultNormalize(_controlPoint);
+					_controlPoint = _mNodeTransform.MultNormalize(_controlPoint);
+					_controlPoint = _controlPoint * 0.1f;
 
 					FVector _vertex;
-					_vertex.X = (float)_controlPoint.mData[0];
+					_vertex.X = (float)-_controlPoint.mData[0];
 					_vertex.Y = (float)_controlPoint.mData[1];
 					_vertex.Z = (float)_controlPoint.mData[2];
 
-					_tempVertexArray.Push(_vertex);
-					_tempNormalArray.Push(_vNormal);
-					_tempIndexArray.Push(_iVertexCounter);
+					_tempVertexArray.Add(_vertex);
+					_tempNormalArray.Add(_vNormal);
+					_tempIndexArray.Add(_iVertexCounter);
 					_iVertexCounter++;
 
 				}
@@ -189,9 +193,9 @@ FbxMatrix FBX_Importer::ComputeTotalMatrix(FbxNode* pInNode)
 {
 	FbxMatrix _mGeometry;
 	FbxVector4 _vTranslation, _vRotation, _vScaling;
-	_vTranslation = pInNode->GetGeometricTranslation(FbxNode::eSourcePivot);
-	_vRotation = pInNode->GetGeometricRotation(FbxNode::eSourcePivot);
-	_vScaling = pInNode->GetGeometricScaling(FbxNode::eSourcePivot);
+	_vTranslation = pInNode->LclTranslation.Get();
+	_vRotation = pInNode->LclRotation.Get();
+	_vScaling = pInNode->LclScaling.Get();
 	_mGeometry.SetTRS(_vTranslation, _vRotation, _vScaling);
 
 	FbxMatrix _mGlobalTransform = pInNode->EvaluateGlobalTransform();//FbxScene->GetEvaluator()->GetNodeGlobalTransform(Node);
