@@ -20,6 +20,13 @@ ASimpleCylinderActor::ASimpleCylinderActor()  // Orginal
 {
 	mesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("ProceduralMesh"));
 	RootComponent = mesh;
+
+	static ConstructorHelpers::FObjectFinder<UMaterial> _Material(TEXT("Material'/Game/StarterContent/Materials/M_Basic_Wall.M_Basic_Wall'"));
+
+	if (_Material.Object != NULL)
+	{
+		m_pTemplateMaterial = (UMaterial*)_Material.Object;
+	}
 	/*	lSdkManager = 0;
 	ios = 0;
 	lImporter = 0;
@@ -71,15 +78,27 @@ void ASimpleCylinderActor::GenerateMesh()
 	TArray<FVector2D> UVs;
 	TArray<FProcMeshTangent> Tangents;
 	TArray<FColor> VertexColors;
+	TArray<FVector> Diffuse;
 	int NodeCount;
 
 	//GenerateCylinder(Vertices, Triangles, Normals, UVs, Tangents, Height, Radius, CrossSectionCount, bCapEnds, bDoubleSided, bSmoothNormals);
-	FString _fileName = "D:\\Joel\\FBX\\Test Objects\\house_detached_batched.fbx";
+	FString _fileName = "D:\\Joel\\FBX\\Test Objects\\simple_fbx_batched.fbx";
 	FBX_Importer* _importer = new FBX_Importer();
-	_importer->LoadFBX(_fileName, &Vertices, &Triangles, &Normals, &NodeCount);
+	_importer->LoadFBX(_fileName, &Vertices, &Triangles, &Normals, &Diffuse, &NodeCount);
+	delete _importer;
 	mesh->ClearAllMeshSections();
 	for (int i = 0; i < NodeCount; i++)
+	{
 		mesh->CreateMeshSection(i, Vertices[i], Triangles[i], Normals[i], UVs, VertexColors, Tangents, false);
+		UMaterialInstanceDynamic* _pMaterial = UMaterialInstanceDynamic::Create(m_pTemplateMaterial, this);
+		
+		if (_pMaterial)
+		{
+			//_pMaterial->SetVectorParameterValue("Color", Diffuse[i]);
+//			_pMaterial->SetTextureParameterValue("Color", )
+			mesh->SetMaterial(i, _pMaterial);
+		}
+	}
 	mesh->MarkRenderStateDirty();  // Needs to be here in order for collision to work on things we need collision on.
 
 }

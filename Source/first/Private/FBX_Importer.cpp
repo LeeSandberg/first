@@ -16,7 +16,7 @@ FBX_Importer::~FBX_Importer()
 	}
 }
 
-void FBX_Importer::LoadFBX(FString InFileName, TArray<TArray<FVector>>* pOutVertexArray, TArray<TArray<int32>>* pOutTriangleArray, TArray<TArray<FVector>>* pOutNormalArray, int* iOutNodeCount)
+void FBX_Importer::LoadFBX(FString InFileName, TArray<TArray<FVector>>* pOutVertexArray, TArray<TArray<int32>>* pOutTriangleArray, TArray<TArray<FVector>>* pOutNormalArray, TArray<FVector>* pOutDiffuseArray, int* iOutNodeCount)
 {
 	if (m_pFbxManager == nullptr)
 	{
@@ -41,7 +41,6 @@ void FBX_Importer::LoadFBX(FString InFileName, TArray<TArray<FVector>>* pOutVert
 
 	if (_pRootNode)
 	{
-		//TArray<FVector> _tempNormals;
 		*iOutNodeCount = _pRootNode->GetChildCount();
 		for (int i = 0; i < *iOutNodeCount; i++)
 		{
@@ -60,21 +59,13 @@ void FBX_Importer::LoadFBX(FString InFileName, TArray<TArray<FVector>>* pOutVert
 			FbxMesh* _pMesh = (FbxMesh*)_pChildNode->GetNodeAttribute();
 
 			FbxVector4* _pVertices = _pMesh->GetControlPoints();
-			//_pMesh->GetPolygonVertexCount();
-			//pOutTriangleArray->Push(_pMesh->GetPolygonVertices());
-			//for (int j = 0; j < _pMesh->GetPolygonVertexCount(); j++)
-			//	pOutTriangleArray->Push(_pMesh->GetPolygonVertex[j]);
 
 			TArray<FVector> _tempVertexArray;
 			TArray<FVector> _tempNormalArray;
 			TArray<int> _tempIndexArray;
 			int _iVertexCounter = 0;
-			//FbxMatrix _mTotalMatrix = ComputeTotalMatrix(_pChildNode);
 			FbxMatrix _mNodeTransform = _pChildNode->EvaluateLocalTransform();
-			//_mNodeTransform = _mNodeTransform * 10.0f;
-			//FbxVector _vNodeUp = _pChildNode->UpVectorProperty.Get();
-			//for (int j = 0; j < _pMesh->GetPolygonVertexCount(); j++)
-			//	_tempIndexArray.Push(j);
+
 
 			for (int j = 0; j < _pMesh->GetPolygonCount(); j++)
 			{
@@ -118,12 +109,51 @@ void FBX_Importer::LoadFBX(FString InFileName, TArray<TArray<FVector>>* pOutVert
 			pOutVertexArray->Push(_tempVertexArray);
 			pOutNormalArray->Push(_tempNormalArray);
 			pOutTriangleArray->Push(_tempIndexArray);
+
+
+			int32 _iMatCount = _pChildNode->GetMaterialCount();
+
+			// visit all materials
+			int32 _iMaterialIndex;
+			for (_iMaterialIndex = 0; _iMaterialIndex < _iMatCount; _iMaterialIndex++)
+			{
+				FbxSurfaceMaterial* _pMaterial = _pChildNode->GetMaterial(_iMaterialIndex);
+
+				if (_pMaterial)
+				{
+					FbxProperty _Property = _pMaterial->FindProperty(FbxSurfaceMaterial::sDiffuse);
+					FbxVector4 _vDiffuse = _Property.Get<FbxVector4>();
+					//_Property = _pMaterial->FindProperty(FbxSurfaceMaterial::)
+					FVector _vOut(_vDiffuse.mData[0], _vDiffuse.mData[1], _vDiffuse.mData[2]);
+					pOutDiffuseArray->Add(_vOut);
+
+					int32 _iTextureIndex;
+					FBXSDK_FOR_EACH_TEXTURE(_iTextureIndex)
+					{
+						_Property = _pMaterial->FindProperty(FbxLayerElement::sTextureChannelNames[_iTextureIndex]);
+
+						if (_Property.IsValid())
+						{
+							int32 _iNbTextures = _Property.GetSrcObjectCount<FbxTexture>();
+							for (int32 _iTexIndex = 0; _iTexIndex < _iNbTextures; _iTexIndex++)
+							{
+
+								FbxFileTexture* _pTexture = _Property.GetSrcObject<FbxFileTexture>(_iTexIndex);
+								if (_pTexture)
+								{
+									FbxFileTexture* _pFbxTexture = _Property.GetSrcObject<FbxFileTexture>(_iTexIndex);
+
+									// create an unreal texture asset
+								}
+							}
+
+						//UTexture* UnrealTexture = ImportTexture(FbxTexture, bSetupAsNormalMap);
+						}
+					}
+				}
+			}
 		}
-		//TArray<FVector>::TIterator _it = _tempNormals.CreateIterator();
-		//for (int i = _tempNormals.Num() -1; i >= 0; i--)
-		//{
-		//	pOutNormalArray->Push(_tempNormals[i]);
-		//}
+		
 	}
 }
 

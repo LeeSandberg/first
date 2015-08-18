@@ -140,6 +140,8 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = Materials)
 		UProceduralMeshComponent* mesh;
 
+	UMaterial* m_pTemplateMaterial;
+
 	void GenerateCylinder(TArray<FVector>& Vertices, TArray<int32>& Triangles, TArray<FVector>& Normals, TArray<FVector2D>& UVs, TArray<FProcMeshTangent>& Tangents, float Height, float InWidth, int32 InCrossSectionCount, bool bCapEnds = false, bool bDoubleSided = false, bool bInSmoothNormals = true);
 };
 
