@@ -2,6 +2,8 @@
 
 #include "first.h"
 #include "FBX_Importer.h"
+#include <DDSLoader.h>
+#include <ImageWrapper.h>
 
 FBX_Importer::FBX_Importer()
 {
@@ -16,7 +18,7 @@ FBX_Importer::~FBX_Importer()
 	}
 }
 
-void FBX_Importer::LoadFBX(FString InFileName, TArray<TArray<FVector>>* pOutVertexArray, TArray<TArray<int32>>* pOutTriangleArray, TArray<TArray<FVector>>* pOutNormalArray, TArray<FVector>* pOutDiffuseArray, int* iOutNodeCount)
+void FBX_Importer::LoadFBX(FString InFileName, TArray<TArray<FVector>>* pOutVertexArray, TArray<TArray<int32>>* pOutTriangleArray, TArray<TArray<FVector>>* pOutNormalArray, TArray<FVector>* pOutDiffuseArray, TArray<UTexture2D*>* pOutTextureArray, TArray<TArray<FVector2D>>* pOutUVArray, int* iOutNodeCount)
 {
 	if (m_pFbxManager == nullptr)
 	{
@@ -63,6 +65,7 @@ void FBX_Importer::LoadFBX(FString InFileName, TArray<TArray<FVector>>* pOutVert
 			TArray<FVector> _tempVertexArray;
 			TArray<FVector> _tempNormalArray;
 			TArray<int> _tempIndexArray;
+			TArray<FVector2D> _tempUVArray;
 			int _iVertexCounter = 0;
 			FbxMatrix _mNodeTransform = _pChildNode->EvaluateLocalTransform();
 
@@ -83,24 +86,24 @@ void FBX_Importer::LoadFBX(FString InFileName, TArray<TArray<FVector>>* pOutVert
 
 					FVector _vNormal;
 					ReadNormal(_pMesh, _iControlPointIndex, _iVertexCounter, &_vNormal);
-					//_vNormal = -_vNormal;
 
+					FVector2D _vUV;
+					ReadUV(_pMesh, _iControlPointIndex, _iVertexCounter, &_vUV);
 
 					FbxVector4 _controlPoint = _pVertices[_iControlPointIndex];
-					//FbxVector4 _foo(10.0, 10.0, 10.0);
-					//_controlPoint = (_controlPoint /* _dNodeScale /** 0.0001f*/) + (_vNodePosition /* 0.0001f*/);
-					//_controlPoint = _mTotalMatrix.MultNormalize(_controlPoint);
+
 					_controlPoint = _mNodeTransform.MultNormalize(_controlPoint);
 					_controlPoint = _controlPoint * 0.1f;
 
 					FVector _vertex;
-					_vertex.X = (float)-_controlPoint.mData[0];
+					_vertex.X = (float)-_controlPoint.mData[0]; //invert x, otherwise everything is mirrored.
 					_vertex.Y = (float)_controlPoint.mData[1];
 					_vertex.Z = (float)_controlPoint.mData[2];
 
 					_tempVertexArray.Add(_vertex);
 					_tempNormalArray.Add(_vNormal);
 					_tempIndexArray.Add(_iVertexCounter);
+					_tempUVArray.Add(_vUV);
 					_iVertexCounter++;
 
 				}
@@ -109,6 +112,7 @@ void FBX_Importer::LoadFBX(FString InFileName, TArray<TArray<FVector>>* pOutVert
 			pOutVertexArray->Push(_tempVertexArray);
 			pOutNormalArray->Push(_tempNormalArray);
 			pOutTriangleArray->Push(_tempIndexArray);
+			pOutUVArray->Push(_tempUVArray);
 
 
 			int32 _iMatCount = _pChildNode->GetMaterialCount();
@@ -123,7 +127,7 @@ void FBX_Importer::LoadFBX(FString InFileName, TArray<TArray<FVector>>* pOutVert
 				{
 					FbxProperty _Property = _pMaterial->FindProperty(FbxSurfaceMaterial::sDiffuse);
 					FbxVector4 _vDiffuse = _Property.Get<FbxVector4>();
-					//_Property = _pMaterial->FindProperty(FbxSurfaceMaterial::)
+
 					FVector _vOut(_vDiffuse.mData[0], _vDiffuse.mData[1], _vDiffuse.mData[2]);
 					pOutDiffuseArray->Add(_vOut);
 
@@ -144,10 +148,16 @@ void FBX_Importer::LoadFBX(FString InFileName, TArray<TArray<FVector>>* pOutVert
 									FbxFileTexture* _pFbxTexture = _Property.GetSrcObject<FbxFileTexture>(_iTexIndex);
 
 									// create an unreal texture asset
+									FString _sFilename = UTF8_TO_TCHAR(_pFbxTexture->GetFileName());
+
+									UTexture2D* _pUnrealTexture = LoadTexture(_sFilename);
+
+									if (_pUnrealTexture != NULL)
+										pOutTextureArray->Push(_pUnrealTexture);
+
+
 								}
 							}
-
-						//UTexture* UnrealTexture = ImportTexture(FbxTexture, bSetupAsNormalMap);
 						}
 					}
 				}
@@ -219,6 +229,72 @@ void FBX_Importer::ReadNormal(FbxMesh* pInMesh, int iInControlPointIndex, int iI
 	}
 }
 
+void FBX_Importer::ReadUV(FbxMesh* pInMesh, int iInControlPointIndex, int iInVertexCounter, FVector2D* pOutUV)
+{
+	if (pInMesh->GetElementUVCount() < 1)
+	{
+		return;//throw std::exception("Invalid UV Number");
+	}
+
+	if (pInMesh->GetElementUVCount() > 0)
+	{
+		FbxGeometryElementUV* _vertexUV = pInMesh->GetElementUV(0);
+		switch (_vertexUV->GetMappingMode())
+		{
+			case FbxGeometryElement::eByControlPoint:
+			{
+				switch (_vertexUV->GetReferenceMode())
+				{
+					case FbxGeometryElement::eDirect:
+					{
+						pOutUV->X = static_cast<float>(_vertexUV->GetDirectArray().GetAt(iInControlPointIndex).mData[0]);
+						pOutUV->Y = static_cast<float>(_vertexUV->GetDirectArray().GetAt(iInControlPointIndex).mData[1]);
+					}
+					break;
+				
+					case FbxGeometryElement::eIndexToDirect:
+					{
+						int index = _vertexUV->GetIndexArray().GetAt(iInControlPointIndex);
+						pOutUV->X = static_cast<float>(_vertexUV->GetDirectArray().GetAt(index).mData[0]);
+						pOutUV->Y = static_cast<float>(_vertexUV->GetDirectArray().GetAt(index).mData[1]);
+					}
+					break;
+
+					default:
+						throw std::exception("Invalid Reference");
+				}
+			}
+			break;
+
+			case FbxGeometryElement::eByPolygonVertex:
+			{
+				switch (_vertexUV->GetReferenceMode())
+				{
+					case FbxGeometryElement::eDirect:
+					{
+						pOutUV->X = static_cast<float>(_vertexUV->GetDirectArray().GetAt(iInVertexCounter).mData[0]);
+						pOutUV->Y = static_cast<float>(_vertexUV->GetDirectArray().GetAt(iInVertexCounter).mData[1]);
+					}
+					break;
+
+					case FbxGeometryElement::eIndexToDirect:
+					{
+						int index = _vertexUV->GetIndexArray().GetAt(iInVertexCounter);
+						pOutUV->X = static_cast<float>(_vertexUV->GetDirectArray().GetAt(index).mData[0]);
+						pOutUV->Y = static_cast<float>(_vertexUV->GetDirectArray().GetAt(index).mData[1]);
+					}
+					break;
+
+					default:
+						throw std::exception("Invalid Reference");
+				}
+			}
+			break;
+
+		}
+	}
+}
+
 FbxMatrix FBX_Importer::ComputeTotalMatrix(FbxNode* pInNode)
 {
 	FbxMatrix _mGeometry;
@@ -234,4 +310,143 @@ FbxMatrix FBX_Importer::ComputeTotalMatrix(FbxNode* pInNode)
 	_mTotalMatrix = _mGlobalTransform * _mGeometry;
 
 	return _mTotalMatrix;
+}
+
+/** Loads a texture from the data path */
+UTexture2D* FBX_Importer::LoadTexture(FString TextureFilename)
+{
+	UTexture2D* Texture = NULL;
+
+	FString TexturePath = TextureFilename;
+	const TCHAR* s = *TextureFilename;
+	TArray<uint8> FileData;
+
+	
+	FString _sExtension = FPaths::GetExtension(TextureFilename).ToLower();
+
+	TArray<uint8> RawFileData;
+
+	if (FFileHelper::LoadFileToArray(RawFileData, *TextureFilename))
+	{
+		IImageWrapperModule& _ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
+		// Note: PNG format.  Other formats are supported
+		
+		EImageFormat::Type _Format = EImageFormat::BMP;
+		if (_sExtension == "jpg" || "jpeg")
+			_Format = EImageFormat::JPEG;
+
+		if (_sExtension == "png")
+			_Format = EImageFormat::PNG;
+
+		IImageWrapperPtr ImageWrapper = _ImageWrapperModule.CreateImageWrapper(_Format);
+		if (ImageWrapper.IsValid() && ImageWrapper->SetCompressed(RawFileData.GetData(), RawFileData.Num()))
+		{
+			const TArray<uint8>* UncompressedBGRA = NULL;
+			if (ImageWrapper->GetRaw(ERGBFormat::BGRA, 8, UncompressedBGRA))
+			{
+				// Create the UTexture for rendering
+				Texture = UTexture2D::CreateTransient(ImageWrapper->GetWidth(), ImageWrapper->GetHeight(), PF_B8G8R8A8);
+
+				// Fill in the source data from the file
+				uint8* TextureData = (uint8*)Texture->PlatformData->Mips[0].BulkData.Lock(LOCK_READ_WRITE);
+				FMemory::Memcpy(TextureData, UncompressedBGRA->GetData(), UncompressedBGRA->Num());
+				Texture->PlatformData->Mips[0].BulkData.Unlock();
+
+				// Update the rendering resource from data.
+				Texture->UpdateResource();
+
+			}
+		}
+	}
+
+
+
+
+
+	/* Load DDS texture */
+	if (FFileHelper::LoadFileToArray(FileData, *TexturePath, 0))
+	{
+		FDDSLoadHelper DDSLoadHelper(&FileData[0], FileData.Num());
+		if (DDSLoadHelper.IsValid2DTexture())
+		{
+			int32 NumMips = DDSLoadHelper.ComputeMipMapCount();
+			EPixelFormat Format = DDSLoadHelper.ComputePixelFormat();
+			int32 BlockSize = 16;
+
+			if (NumMips == 0)
+			{
+				NumMips = 1;
+			}
+
+			if (Format == PF_DXT1)
+			{
+				BlockSize = 8;
+			}
+
+			/* Create transient texture */
+			Texture = UTexture2D::CreateTransient(DDSLoadHelper.DDSHeader->dwWidth, DDSLoadHelper.DDSHeader->dwHeight, Format);
+			//Texture->MipGenSettings = TMGS_LeaveExistingMips;
+			Texture->PlatformData->NumSlices = 1;
+			Texture->NeverStream = true;
+			Texture->Rename((TCHAR*)&"Foo");
+
+			/* Get pointer to actual data */
+			uint8* DataPtr = (uint8*)DDSLoadHelper.GetDDSDataPointer();
+
+			uint32 CurrentWidth = DDSLoadHelper.DDSHeader->dwWidth;
+			uint32 CurrentHeight = DDSLoadHelper.DDSHeader->dwHeight;
+
+			/* Iterate through mips */
+			for (int32 i = 0; i < NumMips; i++)
+			{
+				/* Lock to 1x1 as smallest size */
+				CurrentWidth = (CurrentWidth < 1) ? 1 : CurrentWidth;
+				CurrentHeight = (CurrentHeight < 1) ? 1 : CurrentHeight;
+
+				/* Get number of bytes to read */
+				int32 NumBytes = CurrentWidth * CurrentHeight * 4;
+				if (Format == PF_DXT1 || Format == PF_DXT3 || Format == PF_DXT5)
+				{
+					/* Compressed formats */
+					NumBytes = ((CurrentWidth + 3) / 4) * ((CurrentHeight + 3) / 4) * BlockSize;
+				}
+
+				/* Write to existing mip */
+				if (i < Texture->PlatformData->Mips.Num())
+				{
+					FTexture2DMipMap& Mip = Texture->PlatformData->Mips[i];
+
+					void* Data = Mip.BulkData.Lock(LOCK_READ_WRITE);
+					FMemory::Memcpy(Data, DataPtr, NumBytes);
+					Mip.BulkData.Unlock();
+				}
+
+				/* Add new mip */
+				else
+				{
+					FTexture2DMipMap* Mip = new(Texture->PlatformData->Mips) FTexture2DMipMap();
+					Mip->SizeX = CurrentWidth;
+					Mip->SizeY = CurrentHeight;
+
+					Mip->BulkData.Lock(LOCK_READ_WRITE);
+					Mip->BulkData.Realloc(NumBytes);
+					Mip->BulkData.Unlock();
+
+					void* Data = Mip->BulkData.Lock(LOCK_READ_WRITE);
+					FMemory::Memcpy(Data, DataPtr, NumBytes);
+					Mip->BulkData.Unlock();
+				}
+
+				/* Set next mip level */
+				CurrentWidth /= 2;
+				CurrentHeight /= 2;
+
+				DataPtr += NumBytes;
+			}
+
+			Texture->UpdateResource();
+		}
+	}
+
+	return Texture;
 }

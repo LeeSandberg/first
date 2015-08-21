@@ -7,7 +7,7 @@ public class first : ModuleRules
     public first(TargetInfo Target)
     {
         //string FBXSDKDir = UEBuildConfiguration.UEThirdPartySourceDirectory + "FBX/2014.2.1/";
-        string FBXSDKDir = "D:/Autodesk/FBX/FBX SDK/2014.2.1/";
+        string FBXSDKDir = "D:/Autodesk/FBX/FBXSDK/2014.2.1/";
         PublicSystemIncludePaths.AddRange(
             new string[] {
 					FBXSDKDir + "include",
@@ -49,7 +49,7 @@ public class first : ModuleRules
                 Definitions.Add("FBXSDK_COMPILER_CLANG");
             }*/
 
-        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore" });
+        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "ImageWrapper" });
 
         PrivateDependencyModuleNames.AddRange(new string[] { "ProceduralMeshComponent" });
         PrivateIncludePathModuleNames.AddRange(new string[] { "ProceduralMeshComponent" });

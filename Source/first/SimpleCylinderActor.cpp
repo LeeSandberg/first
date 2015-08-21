@@ -21,7 +21,7 @@ ASimpleCylinderActor::ASimpleCylinderActor()  // Orginal
 	mesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("ProceduralMesh"));
 	RootComponent = mesh;
 
-	static ConstructorHelpers::FObjectFinder<UMaterial> _Material(TEXT("Material'/Game/StarterContent/Materials/M_Basic_Wall.M_Basic_Wall'"));
+	static ConstructorHelpers::FObjectFinder<UMaterial> _Material(TEXT("Material'/Game/StarterContent/Materials/M_Template.M_Template'"));
 
 	if (_Material.Object != NULL)
 	{
@@ -75,27 +75,32 @@ void ASimpleCylinderActor::GenerateMesh()
 	TArray<TArray<FVector>> Vertices;
 	TArray<TArray<int32>> Triangles;
 	TArray<TArray<FVector>> Normals;
-	TArray<FVector2D> UVs;
+	TArray<TArray<FVector2D>> UVs;
 	TArray<FProcMeshTangent> Tangents;
 	TArray<FColor> VertexColors;
 	TArray<FVector> Diffuse;
+	TArray<UTexture2D*> Texture;
 	int NodeCount;
 
 	//GenerateCylinder(Vertices, Triangles, Normals, UVs, Tangents, Height, Radius, CrossSectionCount, bCapEnds, bDoubleSided, bSmoothNormals);
-	FString _fileName = "D:\\Joel\\FBX\\Test Objects\\simple_fbx_batched.fbx";
+	FString _fileName = "D:\\Joel\\FBX\\Test Objects\\test_object_5_texture.fbx";
 	FBX_Importer* _importer = new FBX_Importer();
-	_importer->LoadFBX(_fileName, &Vertices, &Triangles, &Normals, &Diffuse, &NodeCount);
+	_importer->LoadFBX(_fileName, &Vertices, &Triangles, &Normals, &Diffuse, &Texture, &UVs, &NodeCount);
 	delete _importer;
 	mesh->ClearAllMeshSections();
 	for (int i = 0; i < NodeCount; i++)
 	{
-		mesh->CreateMeshSection(i, Vertices[i], Triangles[i], Normals[i], UVs, VertexColors, Tangents, false);
+		mesh->CreateMeshSection(i, Vertices[i], Triangles[i], Normals[i], UVs[i], VertexColors, Tangents, false);
 		UMaterialInstanceDynamic* _pMaterial = UMaterialInstanceDynamic::Create(m_pTemplateMaterial, this);
 		
 		if (_pMaterial)
 		{
-			//_pMaterial->SetVectorParameterValue("Color", Diffuse[i]);
-//			_pMaterial->SetTextureParameterValue("Color", )
+
+			_pMaterial->SetVectorParameterValue("Color", Diffuse[i]);
+			if (Texture.Num() > i)
+			{
+				_pMaterial->SetTextureParameterValue("Texture", Texture[i]);
+			}
 			mesh->SetMaterial(i, _pMaterial);
 		}
 	}
